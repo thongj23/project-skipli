@@ -1,6 +1,6 @@
 'use client';
 
-import LoginSelector from '@/app/components/LoginSelector';
+import LoginSelector from '@/components/LoginSelector';
 
 export default function LoginPage() {
   return (

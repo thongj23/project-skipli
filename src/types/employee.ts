@@ -1,4 +1,4 @@
-interface Employee {
+export interface Employee {
   id: string;
   name: string;
   email: string;
@@ -10,3 +10,4 @@ interface Employee {
     hours: string;
   };
 }
+export type FormData = Omit<Employee, 'id'>;

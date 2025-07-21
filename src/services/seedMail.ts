@@ -1,4 +1,4 @@
-import apiService from '../config/axios';
+import apiService from '../lib/api/axiosInstance';
 import { AxiosResponse } from 'axios';
 
 interface CreateEmployeeResponse {

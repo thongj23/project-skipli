@@ -3,7 +3,7 @@
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'react-toastify';
-import authService from '@/services/apiService/authService'; // điều chỉnh path nếu khác
+import authService from '@/lib/api/authApi';
 
 export default function SetupPasswordPage() {
   const searchParams = useSearchParams();
@@ -31,7 +31,7 @@ export default function SetupPasswordPage() {
 
       toast.success('Password set successfully!');
       router.push('/login');
-      //
+      
     } catch (error: any) {
       toast.error(error.message || 'Something went wrong');
     } finally {

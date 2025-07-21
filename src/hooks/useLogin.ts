@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
-import authService from '../../services/apiService/authService';
+import authService from '../lib/api/authApi';
 import { AxiosResponse, AxiosError } from 'axios';
 
 type Role = 'employee' | 'owner';
@@ -19,9 +19,14 @@ interface AccessCodeResponse {
 interface ValidateResponse {
   success: boolean;
   message: string;
-  accessToken?: string;
+  user?: {
+    uid: string;
+    phoneNumber: string;
+    role: 'owner' | 'manager' | 'employee';
+  };
   accountExists?: boolean;
 }
+
 
 interface SetupAccountResponse {
   success: boolean;
@@ -109,42 +114,43 @@ export function useLogin(role: Role): LoginState {
     }
   };
 
-  const validateCode = async (): Promise<void> => {
-    if (role !== 'owner') return;
+const validateCode = async (): Promise<void> => {
+  if (role !== 'owner') return;
 
-    if (!accessCode.trim()) {
-      setError('Please enter the OTP code.');
-      return;
+  if (!accessCode.trim()) {
+    setError('Please enter the OTP code.');
+    return;
+  }
+
+  setLoading(true);
+  setError('');
+
+  try {
+    const normalizedPhone = normalizePhoneNumber(identifier);
+    const response: AxiosResponse<ValidateResponse> = await authService.validateAccessCode(
+      normalizedPhone,
+      accessCode
+    );
+
+    if (response.data.success && response.data.user) {
+      toast.success('Login successful!');
+      localStorage.setItem('phoneNumber', response.data.user.phoneNumber);
+      localStorage.setItem('userRole', response.data.user.role);
+      localStorage.setItem('uid', response.data.user.uid);
+
+      router.push('/owner-dashboard');
+    } else {
+      setError(response.data.message || 'Invalid or expired OTP.');
     }
+  } catch (err: unknown) {
+    const error = err as AxiosError<{ message?: string }>;
+    console.error('Validate code error:', error);
+    setError(error.response?.data?.message || error.message || 'Verification failed. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
 
-    setLoading(true);
-    setError('');
-
-    try {
-      const normalizedPhone = normalizePhoneNumber(identifier);
-      const response: AxiosResponse<ValidateResponse> = await authService.validateAccessCode(
-        normalizedPhone,
-        accessCode
-      );
-
-      if (response.data.success && response.data.accessToken) {
-        toast.success('Login successful!');
-        await authService.setCookie(response.data.accessToken);
-        localStorage.setItem('phoneNumber', normalizedPhone);
-        localStorage.setItem('token', response.data.accessToken);
-        localStorage.setItem('userRole', 'owner');
-        router.push('/owner-dashboard');
-      } else {
-        setError(response.data.message || 'Invalid or expired OTP.');
-      }
-    } catch (err: unknown) {
-      const error = err as AxiosError<{ message?: string }>;
-      console.error('Validate code error:', error);
-      setError(error.response?.data?.message || error.message || 'Verification failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const setupAccount = async (): Promise<void> => {
     if (role !== 'owner') return;

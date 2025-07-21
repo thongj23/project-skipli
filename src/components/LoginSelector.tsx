@@ -11,7 +11,6 @@ export default function LoginSelector() {
   const handleBack = () => setSelectedType(null);
 
   if (selectedType === 'owner') return <OwnerLoginForm onBack={handleBack} />;
-  // if (selectedType === 'employee') return <EmployeeLoginForm onBack={handleBack} />;
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-gradient-to-br from-gray-50 to-gray-100">

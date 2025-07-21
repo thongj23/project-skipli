@@ -1,14 +1,21 @@
 import axiosInstance from '@/lib/api/axiosInstance';
 import { Task } from '@/types/task';
+import { Socket } from 'socket.io-client';
 
-export const taskService = {
+export const taskService = (socket: Socket | null) => ({
   async getAll(): Promise<Task[]> {
     try {
       const res = await axiosInstance.get('/owner/tasks');
       return res.data.map((task: any) => ({
-        taskId: task.taskId,
-        employeeId: task.employeeId,
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        dueDate: task.dueDate,
         status: task.status,
+        employeeId: task.employeeId,
+        createdBy: task.createdBy,
+        createdAt: task.createdAt,
+        updatedAt: task.updatedAt,
       }));
     } catch (error: any) {
       console.error('Lỗi khi lấy danh sách task:', error.message);
@@ -19,15 +26,16 @@ export const taskService = {
     }
   },
 
-  async create(data: Omit<Task, 'taskId'>): Promise<Task> {
+  async create(data: Omit<Task, 'id'>): Promise<Task> {
     try {
       const res = await axiosInstance.post('/owner/tasks', data);
-      const task = res.data;
-      return {
-        taskId: task.taskId,
-        employeeId: task.employeeId,
-        status: task.status,
-      };
+      const task: Task = res.data;
+
+      if (socket && socket.connected) {
+        socket.emit('taskCreated', task);
+      }
+
+      return task;
     } catch (error: any) {
       console.error('Lỗi khi tạo task:', error.message);
       if (error.message.includes('Không tìm thấy token xác thực')) {
@@ -37,27 +45,31 @@ export const taskService = {
     }
   },
 
-  async update(taskId: string, updates: Partial<Task>): Promise<Task> {
+  async update(id: string, updates: Partial<Task>): Promise<Task> {
     try {
-      const res = await axiosInstance.patch('/owner/tasks', { taskId, ...updates });
-      const task = res.data;
-      return {
-        taskId: task.taskId,
-        employeeId: task.employeeId,
-        status: task.status,
-      };
+      const res = await axiosInstance.patch('/owner/tasks', { id, ...updates });
+      const task: Task = res.data;
+
+      if (socket && socket.connected) {
+        socket.emit('taskUpdated', task);
+      }
+
+      return task;
     } catch (error: any) {
-      console.error('Lỗi khi cập nhật task:', error.message);
-      if (error.message.includes('Không tìm thấy token xác thực')) {
+      console.error('Lỗi khi cập nhật task:', error?.response?.data || error.message);
+      if (error?.response?.status === 401 || error.message.includes('token')) {
         throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
       }
-      throw new Error('Không thể cập nhật task: ' + error.message);
+      throw new Error('Không thể cập nhật task: ' + (error?.response?.data?.message || error.message));
     }
   },
 
-  async remove(taskId: string): Promise<{ message: string }> {
+  async remove(id: string): Promise<{ message: string }> {
     try {
-      const res = await axiosInstance.delete(`/owner/tasks/${taskId}`);
+      const res = await axiosInstance.delete(`/owner/tasks/${id}`);
+      if (socket && socket.connected) {
+        socket.emit('taskDeleted', id);
+      }
       return res.data;
     } catch (error: any) {
       console.error('Lỗi khi xóa task:', error.message);
@@ -67,4 +79,4 @@ export const taskService = {
       throw new Error('Không thể xóa task: ' + error.message);
     }
   },
-};
+});

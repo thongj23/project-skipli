@@ -24,8 +24,10 @@ interface ValidateResponse {
     phoneNumber: string;
     role: 'owner' | 'manager' | 'employee';
   };
+  accessToken?: string; 
   accountExists?: boolean;
 }
+
 
 
 interface SetupAccountResponse {
@@ -127,16 +129,18 @@ const validateCode = async (): Promise<void> => {
 
   try {
     const normalizedPhone = normalizePhoneNumber(identifier);
-    const response: AxiosResponse<ValidateResponse> = await authService.validateAccessCode(
-      normalizedPhone,
-      accessCode
-    );
+
+    const response: AxiosResponse<ValidateResponse> =
+      await authService.validateAccessCode(normalizedPhone, accessCode);
 
     if (response.data.success && response.data.user) {
       toast.success('Login successful!');
-      localStorage.setItem('phoneNumber', response.data.user.phoneNumber);
-      localStorage.setItem('userRole', response.data.user.role);
-      localStorage.setItem('uid', response.data.user.uid);
+
+     
+      // localStorage.setItem('accessToken', response.data.accessToken);
+      // localStorage.setItem('phoneNumber', response.data.user.phoneNumber);
+      // localStorage.setItem('userRole', response.data.user.role);
+      // localStorage.setItem('uid', response.data.user.uid);
 
       router.push('/owner-dashboard');
     } else {
@@ -179,9 +183,9 @@ const validateCode = async (): Promise<void> => {
 
       if (response.data.success) {
         toast.success('Account setup successfully!');
-        localStorage.setItem('phoneNumber', normalizedPhone);
-        localStorage.setItem('username', username);
-        localStorage.setItem('userRole', 'owner');
+        // localStorage.setItem('phoneNumber', normalizedPhone);
+        // localStorage.setItem('username', username);
+        // localStorage.setItem('userRole', 'owner');
         router.push('/owner-dashboard');
       } else {
         setError(response.data.message || 'Failed to setup account. Please try again.');
@@ -222,9 +226,9 @@ const validateCode = async (): Promise<void> => {
 
       if (response.data.success && response.data.token) {
         toast.success('Login successful!');
-        localStorage.setItem('email', identifier);
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('userRole', 'employee');
+        // localStorage.setItem('email', identifier);
+        // localStorage.setItem('token', response.data.token);
+        // localStorage.setItem('userRole', 'employee');
         router.push('/employee-dashboard');
       } else {
         setError(response.data.message || 'Incorrect email or password.');

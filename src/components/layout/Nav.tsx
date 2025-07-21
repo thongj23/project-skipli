@@ -10,7 +10,7 @@ export default function Nav() {
         <Link href="/owner-dashboard" className="text-blue-600 font-medium">
           Manage Employee
         </Link>
-        <Link href="#" className="text-gray-700 hover:text-blue-600">Manage Task</Link>
+        <Link href="/owner-dashboard/task" className="text-gray-700 hover:text-blue-600">Manage Task</Link>
         <Link href="#" className="text-gray-700 hover:text-blue-600">Message</Link>
       </nav>
     </div>

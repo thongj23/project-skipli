@@ -1,13 +1,12 @@
+import { Task } from './task';
 export interface Employee {
-  id: string;
+  id: string; 
   name: string;
   email: string;
-  phoneNumber: string;
+  phoneNumber?: string;
   role: string;
-  department: string;
-  schedule?: {
-    days: string[];
-    hours: string;
-  };
+  status: 'active' | 'inactive';
+  department?: string; 
+  schedule?: { days?: string[]; hours?: string }
+  tasks?: Task[]; 
 }
-export type FormData = Omit<Employee, 'id'>;

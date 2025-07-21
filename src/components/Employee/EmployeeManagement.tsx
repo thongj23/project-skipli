@@ -1,15 +1,17 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { employeeService } from '@/lib/api/employeeApi';
-import EmployeeTable from './EmployeeTable';
-import type { Employee } from '@/types/employee';
-import ModalEmployeeForm from './ModalEmployeeForm';
+import { useEffect, useState } from "react";
+import { employeeService } from "@/lib/api/employeeApi";
+import EmployeeTable from "./EmployeeTable";
+import type { Employee } from "@/types/employee";
+import ModalEmployeeForm from "./ModalEmployeeForm";
 
-export default function OwnerEmployeePage() {
+export default function EmployeeManagement() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
+    null
+  );
   const [openForm, setOpenForm] = useState(false);
 
   const fetchEmployees = async () => {
@@ -18,7 +20,7 @@ export default function OwnerEmployeePage() {
       const data = await employeeService.getAll();
       setEmployees(data);
     } catch (error) {
-      console.error('Failed to load employees:', error);
+      console.error("Failed to load employee list:", error);
     } finally {
       setLoading(false);
     }
@@ -28,18 +30,58 @@ export default function OwnerEmployeePage() {
     fetchEmployees();
   }, []);
 
-  const handleSave = async (data: Omit<Employee, 'id' | 'schedule'>) => {
+  const handleSave = async (
+    data: Omit<Employee, "id" | "schedule" | "tasks">,
+    id?: string
+  ) => {
     try {
-      if (selectedEmployee) {
-        await employeeService.update(selectedEmployee.id, data);
+      if (id && selectedEmployee) {
+        const updates: Partial<Employee> = {};
+
+        if (data.name !== selectedEmployee.name && data.name)
+          updates.name = data.name;
+        if (data.email !== selectedEmployee.email && data.email)
+          updates.email = data.email;
+        if (
+          data.phoneNumber !== selectedEmployee.phoneNumber &&
+          data.phoneNumber !== undefined
+        )
+          updates.phoneNumber = data.phoneNumber;
+        if (data.role !== selectedEmployee.role && data.role)
+          updates.role = data.role;
+        if (
+          data.department !== selectedEmployee.department &&
+          data.department !== undefined
+        )
+          updates.department = data.department;
+        if (
+          data.status !== selectedEmployee.status &&
+          data.status !== undefined
+        )
+          updates.status = data.status;
+        if (Object.keys(updates).length > 0) {
+          await employeeService.update(id, updates);
+        } else {
+          console.log("No changes detected, skipping update.");
+        }
       } else {
-        await employeeService.create(data);
+
+        const createData: Omit<Employee, "id" | "schedule" | "tasks"> = {
+          name: data.name || "",
+          email: data.email || "",
+          phoneNumber: data.phoneNumber || "",
+          role: data.role || "employee",
+          status: data.status || "active",
+          department: data.department || "",
+        };
+        await employeeService.create(createData);
       }
-      fetchEmployees();
+
+      await fetchEmployees();
       setOpenForm(false);
       setSelectedEmployee(null);
     } catch (error) {
-      console.error(error);
+      console.error("Error saving employee:", error);
     }
   };
 
@@ -51,9 +93,9 @@ export default function OwnerEmployeePage() {
   const handleDelete = async (id: string) => {
     try {
       await employeeService.remove(id);
-      fetchEmployees();
+      await fetchEmployees();
     } catch (error) {
-      console.error(error);
+      console.error("Error deleting employee:", error);
     }
   };
 
@@ -81,9 +123,24 @@ export default function OwnerEmployeePage() {
 
       <ModalEmployeeForm
         open={openForm}
-        onClose={() => setOpenForm(false)}
+        onClose={() => {
+          setOpenForm(false);
+          setSelectedEmployee(null);
+        }}
         onSave={handleSave}
         defaultValues={selectedEmployee || undefined}
+        initialData={
+          selectedEmployee
+            ? {
+                name: selectedEmployee.name,
+                email: selectedEmployee.email,
+                phoneNumber: selectedEmployee.phoneNumber || "",
+                role: selectedEmployee.role,
+                status: selectedEmployee.status,
+                department: selectedEmployee.department || "",
+              }
+            : null
+        }
       />
     </div>
   );

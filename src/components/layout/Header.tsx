@@ -2,9 +2,14 @@
 import { useRouter } from 'next/navigation';
 import { LoginResponse } from '@/lib/api/authApi';
 
-interface HeaderProps {
-  user: LoginResponse;
+export interface HeaderProps {
+  user: {
+    id: string;
+    phoneNumber?: string;
+    role?: string;
+  };
 }
+
 
 export default function Header({ user }: HeaderProps) {
   const router = useRouter();
@@ -19,7 +24,14 @@ export default function Header({ user }: HeaderProps) {
       <div className="container mx-auto flex justify-between items-center">
         <h1 className="text-xl font-bold">Task Management</h1>
         <div className="flex items-center space-x-4">
-          <span>{user.message.includes('email') ? user.message.split(' ')[1] : 'User'}</span>
+        <span>
+  {user.phoneNumber
+    ? `SĐT: ${user.phoneNumber}`
+    : user.role
+      ? `Vai trò: ${user.role}`
+      : 'Người dùng'}
+</span>
+
           <button
             onClick={handleLogout}
             className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"

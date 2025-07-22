@@ -1,6 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { LoginResponse } from '@/lib/api/authApi';
+import authApi from '@/lib/api/authApi';
 
 export interface HeaderProps {
   user: {
@@ -10,13 +10,16 @@ export interface HeaderProps {
   };
 }
 
-
 export default function Header({ user }: HeaderProps) {
   const router = useRouter();
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    router.push('/login');
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   return (
@@ -24,13 +27,13 @@ export default function Header({ user }: HeaderProps) {
       <div className="container mx-auto flex justify-between items-center">
         <h1 className="text-xl font-bold">Task Management</h1>
         <div className="flex items-center space-x-4">
-        <span>
-  {user.phoneNumber
-    ? `SĐT: ${user.phoneNumber}`
-    : user.role
-      ? `Vai trò: ${user.role}`
-      : 'Người dùng'}
-</span>
+          <span>
+            {user.phoneNumber
+              ? `Phone: ${user.phoneNumber}`
+              : user.role
+              ? `Role: ${user.role}`
+              : 'User'}
+          </span>
 
           <button
             onClick={handleLogout}

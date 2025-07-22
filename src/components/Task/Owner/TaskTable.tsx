@@ -59,7 +59,7 @@ export default function TaskTable({ tasks, employees, loading, onEdit, onDelete 
     <table className="w-full text-left border border-gray-200">
       <thead className="bg-gray-100">
         <tr>
-          <th className="p-3">Task ID</th>
+          {/* <th className="p-3">Task ID</th> */}
           <th className="p-3">Title</th>
           <th className="p-3">Description</th>
           <th className="p-3">Due Date</th>
@@ -71,7 +71,7 @@ export default function TaskTable({ tasks, employees, loading, onEdit, onDelete 
       <tbody>
         {tasks.map((task) => (
           <tr key={task.id} className="border-t border-gray-200">
-            <td className="p-3">{task.id}</td>
+            {/* <td className="p-3">{task.id}</td> */}
             <td className="p-3">{task.title}</td>
             <td className="p-3">{task.description || 'None'}</td>
             <td className="p-3">{formatDate(task.dueDate)}</td>

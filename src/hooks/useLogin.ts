@@ -1,9 +1,12 @@
 'use client';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
 import authService from '../lib/api/authApi';
 import { AxiosResponse, AxiosError } from 'axios';
+import { useUserStore } from '@/stores/userStore';
+import { User } from '@/types/user';
 
 type Role = 'employee' | 'owner';
 
@@ -16,33 +19,8 @@ interface AccessCodeResponse {
   expiresIn?: string;
 }
 
-interface ValidateResponse {
-  success: boolean;
-  message: string;
-  user?: {
-    uid: string;
-    phoneNumber: string;
-    role: 'owner' | 'manager' | 'employee';
-  };
-  accessToken?: string; 
-  accountExists?: boolean;
-}
-
-
-
-interface SetupAccountResponse {
-  success: boolean;
-  message: string;
-}
-
-interface LoginResponse {
-  success: boolean;
-  message: string;
-  token?: string;
-}
-
 interface LoginState {
-  identifier: string; 
+  identifier: string;
   setIdentifier: (value: string) => void;
   accessCode: string;
   setAccessCode: (value: string) => void;
@@ -55,10 +33,32 @@ interface LoginState {
   loading: boolean;
   error: string;
   generatedOtp: string;
+  user?: User;
   requestCode: () => Promise<void>;
+  setUser: (user: LoginState['user']) => void;
   validateCode: () => Promise<void>;
   setupAccount: () => Promise<void>;
   loginWithCredentials: () => Promise<void>;
+}
+
+interface ValidateResponse {
+  success: boolean;
+  message: string;
+  user?: User;
+  token?: string;
+  accountExists?: boolean;
+}
+
+interface SetupAccountResponse {
+  success: boolean;
+  message: string;
+}
+
+interface LoginResponse {
+  success: boolean;
+  message: string;
+  token?: string;
+  user?: User;
 }
 
 const normalizePhoneNumber = (phone: string): string => {
@@ -73,10 +73,12 @@ export function useLogin(role: Role): LoginState {
   const [accessCode, setAccessCode] = useState<string>('');
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
-  const [step, setStep] = useState<number>(role === 'owner' ? 1 : 4); 
+  const [step, setStep] = useState<number>(role === 'owner' ? 1 : 4);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [generatedOtp, setGeneratedOtp] = useState<string>('');
+  const [user, setUser] = useState<LoginState['user']>();
+
   const router = useRouter();
 
   const requestCode = async (): Promise<void> => {
@@ -96,16 +98,14 @@ export function useLogin(role: Role): LoginState {
       const response: AxiosResponse<AccessCodeResponse> = await authService.requestAccessCode(normalizedPhone);
 
       if (response.data.success) {
+        if (response.data.accessCode) {
+          setGeneratedOtp(response.data.accessCode);
+          setAccessCode(response.data.accessCode);
+          toast.info(`Your OTP is: ${response.data.accessCode}`);
+        }
+
         setStep(2);
         toast.success('Verification code sent to your phone.');
-
-        if (response.data.otp) {
-          setGeneratedOtp(response.data.otp);
-          toast.info(`Your OTP is: ${response.data.otp}`);
-          console.log('Generated OTP:', response.data.otp);
-        }
-      } else {
-        setError(response.data.message || 'Unable to send OTP. Please check your phone number.');
       }
     } catch (err: unknown) {
       const error = err as AxiosError<{ message?: string }>;
@@ -116,45 +116,37 @@ export function useLogin(role: Role): LoginState {
     }
   };
 
-const validateCode = async (): Promise<void> => {
-  if (role !== 'owner') return;
+  const validateCode = async (): Promise<void> => {
+    if (role !== 'owner') return;
 
-  if (!accessCode.trim()) {
-    setError('Please enter the OTP code.');
-    return;
-  }
-
-  setLoading(true);
-  setError('');
-
-  try {
-    const normalizedPhone = normalizePhoneNumber(identifier);
-
-    const response: AxiosResponse<ValidateResponse> =
-      await authService.validateAccessCode(normalizedPhone, accessCode);
-
-    if (response.data.success && response.data.user) {
-      toast.success('Login successful!');
-
-     
-      // localStorage.setItem('accessToken', response.data.accessToken);
-      // localStorage.setItem('phoneNumber', response.data.user.phoneNumber);
-      // localStorage.setItem('userRole', response.data.user.role);
-      // localStorage.setItem('uid', response.data.user.uid);
-
-      router.push('/owner-dashboard');
-    } else {
-      setError(response.data.message || 'Invalid or expired OTP.');
+    if (!accessCode.trim()) {
+      setError('Please enter the OTP.');
+      return;
     }
-  } catch (err: unknown) {
-    const error = err as AxiosError<{ message?: string }>;
-    console.error('Validate code error:', error);
-    setError(error.response?.data?.message || error.message || 'Verification failed. Please try again.');
-  } finally {
-    setLoading(false);
-  }
-};
 
+    setLoading(true);
+    setError('');
+
+    try {
+      const normalizedPhone = normalizePhoneNumber(identifier);
+      const response: AxiosResponse<ValidateResponse> = await authService.validateAccessCode(normalizedPhone, accessCode);
+
+      if (response.data.success && response.data.user) {
+        useUserStore.getState().setUser(response.data.user);
+        setUser(response.data.user);
+        toast.success('Login successful!');
+        router.push('/owner-dashboard/employee');
+      } else {
+        setError(response.data.message || 'OTP verification failed.');
+      }
+    } catch (err: unknown) {
+      const error = err as AxiosError<{ message?: string }>;
+      console.error('OTP verification error:', error);
+      setError(error.response?.data?.message || error.message || 'Verification failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const setupAccount = async (): Promise<void> => {
     if (role !== 'owner') return;
@@ -183,16 +175,13 @@ const validateCode = async (): Promise<void> => {
 
       if (response.data.success) {
         toast.success('Account setup successfully!');
-        // localStorage.setItem('phoneNumber', normalizedPhone);
-        // localStorage.setItem('username', username);
-        // localStorage.setItem('userRole', 'owner');
         router.push('/owner-dashboard');
       } else {
-        setError(response.data.message || 'Failed to setup account. Please try again.');
+        setError(response.data.message || 'Account setup failed. Please try again.');
       }
     } catch (err: unknown) {
       const error = err as AxiosError<{ message?: string }>;
-      console.error('Setup account error:', error);
+      console.error('Account setup error:', error);
       setError(error.response?.data?.message || error.message || 'Connection error. Please try again.');
     } finally {
       setLoading(false);
@@ -200,6 +189,8 @@ const validateCode = async (): Promise<void> => {
   };
 
   const loginWithCredentials = async (): Promise<void> => {
+    const setUser = useUserStore.getState().setUser;
+
     if (role !== 'employee') return;
 
     if (!identifier.trim()) {
@@ -224,12 +215,11 @@ const validateCode = async (): Promise<void> => {
     try {
       const response: AxiosResponse<LoginResponse> = await authService.login(identifier, password);
 
-      if (response.data.success && response.data.token) {
+      if (response.data.success && response.data.token && response.data.user) {
+        console.log('[Login] Setting user in Zustand:', response.data.user);
+        setUser(response.data.user);
         toast.success('Login successful!');
-        // localStorage.setItem('email', identifier);
-        // localStorage.setItem('token', response.data.token);
-        // localStorage.setItem('userRole', 'employee');
-        router.push('/employee-dashboard');
+        window.location.href = '/employee-dashboard/tasks';
       } else {
         setError(response.data.message || 'Incorrect email or password.');
       }
@@ -268,5 +258,7 @@ const validateCode = async (): Promise<void> => {
     validateCode,
     setupAccount,
     loginWithCredentials,
+    user,
+    setUser,
   };
 }

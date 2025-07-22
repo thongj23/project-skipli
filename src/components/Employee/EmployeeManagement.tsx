@@ -110,7 +110,7 @@ export default function EmployeeManagement() {
             setOpenForm(true);
           }}
         >
-          + Add Employee
+          Add Employee
         </button>
       </div>
 

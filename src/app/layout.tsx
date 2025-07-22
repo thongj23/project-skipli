@@ -8,7 +8,7 @@ import jwt from "jsonwebtoken";
 
 export const metadata: Metadata = {
   title: "Skipli",
-  description: "Quản lý công việc",
+  description: "Management task",
 };
 const geistSans = Geist({
   subsets: ['latin'],
@@ -45,7 +45,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="vi">
     <body className={`${geistSans.variable} ${geistMono.variable} antialiased flex min-h-screen`}>
 
-        {user && <Nav />}
+      {user && <Nav user={user} />}
         <div className="flex-1 flex flex-col">
           {user && <Header user={user} />}
           <main className="container mx-auto p-4">{children}</main>

@@ -1,6 +1,6 @@
 import axiosInstance from './axiosInstance';
 import { AxiosResponse, isAxiosError } from 'axios';
-
+import { User } from '@/types/user';
 interface ErrorResponse {
   error?: string;
   message?: string;
@@ -18,7 +18,7 @@ interface AccessCodeResponse {
 interface ValidateResponse {
   success: boolean;
   message: string;
-  accessToken?: string;
+  token?: string;
   accountExists?: boolean;
 }
 
@@ -31,6 +31,7 @@ export interface LoginResponse {
   success: boolean;
   message: string;
   token?: string;
+    user: User
 }
 
 const authApi = {
@@ -69,9 +70,9 @@ const authApi = {
 
   login: async (email: string, password: string): Promise<AxiosResponse<LoginResponse>> => {
     try {
-      const response = await axiosInstance.post<LoginResponse>('/auth/login-employee', { email, password });
+      const response = await axiosInstance.post<LoginResponse>('/auth/login', { email, password });
       if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
+        
         await authApi.setCookie(response.data.token);
       }
       return response;
@@ -115,6 +116,18 @@ const authApi = {
       throw new Error('Unknown error occurred');
     }
   },
+
+
+logout: async (): Promise<void> => {
+  try {
+    await axiosInstance.post('/auth/logout', {}, { withCredentials: true });
+  } catch (error: unknown) {
+    if (isAxiosError<ErrorResponse>(error)) {
+      throw new Error(error.response?.data?.message || error.response?.data?.error || 'Failed to logout');
+    }
+    throw new Error('Unknown error occurred during logout');
+  }
+},
 };
 
 export default authApi;

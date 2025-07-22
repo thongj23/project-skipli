@@ -9,8 +9,15 @@ import TaskTable from './TaskTable';
 import ModalTaskForm from './ModalTaskForm';
 import type { Task, FormData } from '@/types/task';
 import type { Employee } from '@/types/employee';
+import { useUserStore } from '@/stores/userStore';
 
 export default function TaskManagement() {
+  const router = useRouter();
+  const user = useUserStore((state) => state.user);
+  const employeeId = user?.uid;
+
+  console.log('employeeId:', employeeId);
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,23 +25,36 @@ export default function TaskManagement() {
   const [openForm, setOpenForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
-  const router = useRouter();
 
   useEffect(() => {
-    const socketInstance = io('http://localhost:3004');
+    if (!employeeId) {
+      console.warn('⚠️ Socket not initialized because employeeId is missing');
+      setError('User information not found');
+      return;
+    }
+
+    const socketInstance = io('http://localhost:3003', {
+      query: { employeeId },
+    });
     setSocket(socketInstance);
 
     socketInstance.on('connect', () => {
-      console.log('Connected to Socket.IO server');
+      // Connected to socket server
     });
 
     socketInstance.on('taskCreated', (newTask: Task) => {
-      setTasks((prev) => [...prev, newTask]);
+      setTasks((prev) => {
+        const newTasks = [...prev, newTask];
+        console.log('Updated tasks:', newTasks);
+        return newTasks;
+      });
     });
 
     socketInstance.on('taskUpdated', (updatedTask: Task) => {
       setTasks((prev) =>
-        prev.map((task) => (task.id === updatedTask.id ? updatedTask : task))
+        prev.map((task) =>
+          task.id === updatedTask.id ? { ...task, ...updatedTask } : task
+        )
       );
     });
 
@@ -45,11 +65,12 @@ export default function TaskManagement() {
     return () => {
       socketInstance.disconnect();
     };
-  }, []);
+  }, [employeeId]);
 
   useEffect(() => {
+    if (!socket) return;
     fetchTasksAndEmployees();
-  }, []);
+  }, [socket]);
 
   const fetchTasksAndEmployees = async () => {
     try {
@@ -64,7 +85,7 @@ export default function TaskManagement() {
       setEmployees(employeeData);
     } catch (err: any) {
       console.error('Failed to load data:', err);
-      setError(err.message);
+      setError(err.message || 'Error loading data');
     } finally {
       setLoading(false);
     }
@@ -93,13 +114,14 @@ export default function TaskManagement() {
       } else {
         await taskApi.create(data);
         console.log('Task created successfully');
+        fetchTasksAndEmployees(); // Refresh the list
       }
 
       setOpenForm(false);
       setSelectedTask(null);
     } catch (err: any) {
-      console.error('Error while saving task:', err);
-      setError(err.message);
+      console.error('Failed to save task:', err);
+      setError(err.message || 'Error saving task');
     }
   };
 
@@ -113,9 +135,10 @@ export default function TaskManagement() {
       setError(null);
       const taskApi = taskService(socket);
       await taskApi.remove(taskId);
+      console.log('Task deleted successfully');
     } catch (err: any) {
-      console.error('Error while deleting task:', err);
-      setError(err.message);
+      console.error('Failed to delete task:', err);
+      setError(err.message || 'Error deleting task');
     }
   };
 

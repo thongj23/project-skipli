@@ -18,11 +18,11 @@ export const taskService = (socket: Socket | null) => ({
         updatedAt: task.updatedAt,
       }));
     } catch (error: any) {
-      console.error('Lỗi khi lấy danh sách task:', error.message);
-      if (error.message.includes('Không tìm thấy token xác thực')) {
-        throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+      console.error('Failed to fetch task list:', error.message);
+      if (error.message.includes('Authentication token not found')) {
+        throw new Error('Session has expired. Please log in again.');
       }
-      throw new Error('Không thể tải danh sách task: ' + error.message);
+      throw new Error('Unable to load tasks: ' + error.message);
     }
   },
 
@@ -31,17 +31,17 @@ export const taskService = (socket: Socket | null) => ({
       const res = await axiosInstance.post('/owner/tasks', data);
       const task: Task = res.data;
 
-      if (socket && socket.connected) {
+      if (socket?.connected) {
         socket.emit('taskCreated', task);
       }
 
       return task;
     } catch (error: any) {
-      console.error('Lỗi khi tạo task:', error.message);
-      if (error.message.includes('Không tìm thấy token xác thực')) {
-        throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+      console.error('Failed to create task:', error.message);
+      if (error.message.includes('Authentication token not found')) {
+        throw new Error('Session has expired. Please log in again.');
       }
-      throw new Error('Không thể tạo task: ' + error.message);
+      throw new Error('Unable to create task: ' + error.message);
     }
   },
 
@@ -50,33 +50,75 @@ export const taskService = (socket: Socket | null) => ({
       const res = await axiosInstance.patch('/owner/tasks', { id, ...updates });
       const task: Task = res.data;
 
-      if (socket && socket.connected) {
+      if (socket?.connected) {
         socket.emit('taskUpdated', task);
       }
 
       return task;
     } catch (error: any) {
-      console.error('Lỗi khi cập nhật task:', error?.response?.data || error.message);
+      console.error('Failed to update task:', error?.response?.data || error.message);
       if (error?.response?.status === 401 || error.message.includes('token')) {
-        throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        throw new Error('Session has expired. Please log in again.');
       }
-      throw new Error('Không thể cập nhật task: ' + (error?.response?.data?.message || error.message));
+      throw new Error('Unable to update task: ' + (error?.response?.data?.message || error.message));
     }
   },
 
   async remove(id: string): Promise<{ message: string }> {
     try {
       const res = await axiosInstance.delete(`/owner/tasks/${id}`);
-      if (socket && socket.connected) {
+      if (socket?.connected) {
         socket.emit('taskDeleted', id);
       }
       return res.data;
     } catch (error: any) {
-      console.error('Lỗi khi xóa task:', error.message);
-      if (error.message.includes('Không tìm thấy token xác thực')) {
-        throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+      console.error('Failed to delete task:', error.message);
+      if (error.message.includes('Authentication token not found')) {
+        throw new Error('Session has expired. Please log in again.');
       }
-      throw new Error('Không thể xóa task: ' + error.message);
+      throw new Error('Unable to delete task: ' + error.message);
+    }
+  },
+
+  async getByUserId(userId: string): Promise<Task[]> {
+    try {
+      const res = await axiosInstance.get(`/task/user/${userId}`);
+      return res.data.map((task: any) => ({
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        dueDate: task.dueDate,
+        status: task.status,
+        employeeId: task.employeeId,
+        createdBy: task.createdBy,
+        createdAt: task.createdAt,
+        updatedAt: task.updatedAt,
+      }));
+    } catch (error: any) {
+      console.error('Failed to fetch user tasks:', error.message);
+      if (error.message.includes('Authentication token not found')) {
+        throw new Error('Session has expired. Please log in again.');
+      }
+      throw new Error('Unable to load tasks: ' + error.message);
+    }
+  },
+
+  async updateStatus(taskId: string, status: Task['status']): Promise<Task> {
+    try {
+      const res = await axiosInstance.patch(`/task`, { id: taskId, status });
+      const updatedTask: Task = res.data;
+
+      if (socket?.connected) {
+        socket.emit('taskUpdated', updatedTask);
+      }
+
+      return updatedTask;
+    } catch (error: any) {
+      console.error('Failed to update task status:', error?.response?.data || error.message);
+      if (error?.response?.status === 401 || error.message.includes('token')) {
+        throw new Error('Session has expired. Please log in again.');
+      }
+      throw new Error('Unable to update task status: ' + (error?.response?.data?.message || error.message));
     }
   },
 });

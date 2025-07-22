@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
-import OwnerLoginForm from './OwnerLoginForm';
-import EmployeeLoginForm from './EmployeeLoginForm';
+import OwnerLoginForm from './Owner/OwnerLoginForm';
+import EmployeeLoginForm from './Employee/EmployeeLoginForm';
+import { AuthProvider } from '@/context/AuthContext';
 
 type UserType = 'owner' | 'employee' | null;
 
@@ -10,7 +11,21 @@ export default function LoginSelector() {
 
   const handleBack = () => setSelectedType(null);
 
-  if (selectedType === 'owner') return <OwnerLoginForm onBack={handleBack} />;
+  if (selectedType === 'owner') {
+    return (
+      <AuthProvider role="owner">
+        <OwnerLoginForm onBack={handleBack} />
+      </AuthProvider>
+    );
+  }
+
+  if (selectedType === 'employee') {
+    return (
+      <AuthProvider role="employee">
+        <EmployeeLoginForm onBack={handleBack} />
+      </AuthProvider>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-gradient-to-br from-gray-50 to-gray-100">

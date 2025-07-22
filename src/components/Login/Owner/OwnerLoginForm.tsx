@@ -1,10 +1,11 @@
 'use client';
 import React from 'react';
-import { useLogin } from '../hooks/useLogin';
+import { useEffect,useState } from 'react';
+import { useLogin } from '../../../hooks/useLogin';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
+import { useAuthContext } from '@/context/AuthContext';
 interface OwnerLoginFormProps {
   onBack: () => void;
 }
@@ -22,8 +23,19 @@ export default function OwnerLoginForm({ onBack }: OwnerLoginFormProps) {
     generatedOtp,
     requestCode,
     validateCode,
-  } = useLogin('owner');
+  } = useAuthContext();
 
+useEffect(() => {
+  console.log('accessCode updated:', accessCode);
+}, [accessCode]);
+  const [copied, setCopied] = useState(false);
+  const phone = '0776145916';
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(phone);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
   return (
     <div className="flex items-center justify-center min-h-screen px-4">
       <div className="w-full max-w-sm space-y-6">
@@ -34,6 +46,15 @@ export default function OwnerLoginForm({ onBack }: OwnerLoginFormProps) {
         <div className="text-center">
           <h2 className="text-xl font-semibold">Owner Login</h2>
           <p className="text-sm text-gray-600">Use your phone number</p>
+      <div className="flex items-center space-x-2 text-center">
+      <p className=" text-sm text-gray-600 select-text">Default: {phone}</p>
+      <button
+        onClick={handleCopy}
+        className="text-blue-500 text-sm hover:underline"
+      >
+        {copied ? 'Copied!' : 'Copy'}
+      </button>
+    </div>
         </div>
 
         {error && (
@@ -77,6 +98,7 @@ export default function OwnerLoginForm({ onBack }: OwnerLoginFormProps) {
               disabled={loading}
               className="text-center"
             />
+
             <Button
               onClick={validateCode}
               disabled={loading || !accessCode.trim()}

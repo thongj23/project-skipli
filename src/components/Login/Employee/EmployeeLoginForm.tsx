@@ -1,12 +1,14 @@
 'use client';
 import React from 'react';
-import { useLogin } from '../hooks/useLogin';
+import { useLogin } from '../../../hooks/useLogin';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Mail, Lock, AlertCircle } from 'lucide-react';
-
-export default function EmployeeLoginForm() {
+interface EmployeeLoginFormProps {
+  onBack: () => void;
+}
+export default function EmployeeLoginForm({ onBack }: EmployeeLoginFormProps) {
   const {
     identifier,
     setIdentifier,

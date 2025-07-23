@@ -1,22 +1,19 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
 import { taskService } from '@/lib/api/taskApi';
 import { employeeService } from '@/lib/api/employeeApi';
 import TaskTable from './TaskTable';
 import ModalTaskForm from './ModalTaskForm';
+import Pagination from '../../ui/Pagination';
 import type { Task, FormData } from '@/types/task';
 import type { Employee } from '@/types/employee';
 import { useUserStore } from '@/stores/userStore';
 
 export default function TaskManagement() {
-  const router = useRouter();
   const user = useUserStore((state) => state.user);
   const employeeId = user?.uid;
-
-  console.log('employeeId:', employeeId);
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -25,10 +22,12 @@ export default function TaskManagement() {
   const [openForm, setOpenForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     if (!employeeId) {
-      console.warn('⚠️ Socket not initialized because employeeId is missing');
       setError('User information not found');
       return;
     }
@@ -36,25 +35,16 @@ export default function TaskManagement() {
     const socketInstance = io('http://localhost:3003', {
       query: { employeeId },
     });
+
     setSocket(socketInstance);
 
-    socketInstance.on('connect', () => {
-      // Connected to socket server
-    });
-
     socketInstance.on('taskCreated', (newTask: Task) => {
-      setTasks((prev) => {
-        const newTasks = [...prev, newTask];
-        console.log('Updated tasks:', newTasks);
-        return newTasks;
-      });
+      setTasks((prev) => [...prev, newTask]);
     });
 
     socketInstance.on('taskUpdated', (updatedTask: Task) => {
       setTasks((prev) =>
-        prev.map((task) =>
-          task.id === updatedTask.id ? { ...task, ...updatedTask } : task
-        )
+        prev.map((task) => (task.id === updatedTask.id ? { ...task, ...updatedTask } : task))
       );
     });
 
@@ -68,79 +58,77 @@ export default function TaskManagement() {
   }, [employeeId]);
 
   useEffect(() => {
-    if (!socket) return;
-    fetchTasksAndEmployees();
+    if (socket) {
+      fetchTasksAndEmployees();
+    }
   }, [socket]);
+
+  useEffect(() => {
+    setTotalPages(Math.ceil(tasks.length / limit));
+  }, [tasks, limit]);
 
   const fetchTasksAndEmployees = async () => {
     try {
       setLoading(true);
-      setError(null);
       const taskApi = taskService(socket);
-      const [taskData, employeeData] = await Promise.all([
-        taskApi.getAll(),
+      const [taskResponse, employeeResponse] = await Promise.all([
+        taskApi.getAll(), 
         employeeService.getAll(),
       ]);
-      setTasks(taskData);
-      setEmployees(employeeData);
+
+      setTasks(taskResponse);
+      setEmployees(employeeResponse.data);
     } catch (err: any) {
-      console.error('Failed to load data:', err);
       setError(err.message || 'Error loading data');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSave = async (data: FormData, taskId?: string) => {
-    try {
-      setError(null);
-      const taskApi = taskService(socket);
+const handleSave = async (data: FormData, taskId?: string) => {
+  try {
+    const taskApi = taskService(socket);
 
-      if (taskId && selectedTask) {
-        const updates: Partial<Task> = {};
-        if (data.employeeId !== selectedTask.employeeId) {
-          updates.employeeId = data.employeeId;
-        }
-        if (data.status !== selectedTask.status) {
-          updates.status = data.status;
-        }
-
-        if (Object.keys(updates).length > 0) {
-          await taskApi.update(taskId, updates);
-          console.log('Task updated successfully');
-        } else {
-          console.log('No changes detected, skipping update.');
-        }
-      } else {
-        await taskApi.create(data);
-        console.log('Task created successfully');
-        fetchTasksAndEmployees(); // Refresh the list
+    if (taskId && selectedTask) {
+      const updates: Partial<Task> = {};
+      if (data.employeeId !== selectedTask.employeeId) {
+        updates.employeeId = data.employeeId;
       }
-
-      setOpenForm(false);
-      setSelectedTask(null);
-    } catch (err: any) {
-      console.error('Failed to save task:', err);
-      setError(err.message || 'Error saving task');
+      if (data.status !== selectedTask.status) {
+        updates.status = data.status;
+      }
+      if (Object.keys(updates).length > 0) {
+        await taskApi.update(taskId, updates);
+      
+      }
+    } else {
+      await taskApi.create(data);
+    
     }
-  };
+
+    setOpenForm(false);
+    setSelectedTask(null);
+  } catch (err: any) {
+    setError(err.message || 'Error saving task');
+  }
+};
+
 
   const handleEdit = (task: Task) => {
     setSelectedTask(task);
     setOpenForm(true);
   };
 
-  const handleDelete = async (taskId: string) => {
-    try {
-      setError(null);
-      const taskApi = taskService(socket);
-      await taskApi.remove(taskId);
-      console.log('Task deleted successfully');
-    } catch (err: any) {
-      console.error('Failed to delete task:', err);
-      setError(err.message || 'Error deleting task');
-    }
-  };
+const handleDelete = async (taskId: string) => {
+  try {
+    const taskApi = taskService(socket);
+    await taskApi.remove(taskId);
+ await fetchTasksAndEmployees(); 
+  } catch (err: any) {
+    setError(err.message || 'Error deleting task');
+  }
+};
+
 
   return (
     <div className="p-6">
@@ -155,17 +143,23 @@ export default function TaskManagement() {
             setOpenForm(true);
           }}
         >
-          + Add Task
+          Add Task
         </button>
       </div>
 
       <TaskTable
-        tasks={tasks}
+        tasks={tasks.slice((page - 1) * limit, page * limit)}  
         employees={employees}
         loading={loading}
         onEdit={handleEdit}
         onDelete={handleDelete}
       />
+
+      
+        <div className="mt-4 flex justify-end">
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        </div>
+      
 
       <ModalTaskForm
         key={selectedTask?.id || 'new'}

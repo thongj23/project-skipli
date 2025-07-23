@@ -1,6 +1,7 @@
 import { Task } from './task';
 export interface Employee {
   id: string; 
+  employeeId?:string;
   name: string;
   email: string;
   phoneNumber?: string;

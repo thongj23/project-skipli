@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface NavProps {
   user: {
@@ -11,37 +13,74 @@ interface NavProps {
 }
 
 export default function Nav({ user }: NavProps) {
+  const [collapsed, setCollapsed] = useState(false);
+
   if (!user?.role) return null;
 
-  return (
-    <div className="w-64 bg-gray-100 p-4">
-      <div className="mb-6 h-16 bg-gray-300 rounded"></div>
-      <nav className="flex flex-col space-y-4">
-        {user.role === 'manager' && (
-          <>
-            <Link href="/owner-dashboard" className="text-blue-600 font-medium">
-              Manage Employee
-            </Link>
-            <Link href="/owner-dashboard/task" className="text-gray-700 hover:text-blue-600">
-              Manage Task
-            </Link>
-            <Link href="/owner-dashboard/chat" className="text-gray-700 hover:text-blue-600">
-              Message
-            </Link>
-          </>
-        )}
+  const navItems =
+    user.role === 'manager'
+      ? [
+          { href: '/owner-dashboard', label: 'Manage Employee' },
+          { href: '/owner-dashboard/task', label: 'Manage Task' },
+          { href: '/conversation', label: 'Message' },
+        ]
+      : user.role === 'employee'
+      ? [
+          { href: '/employee-dashboard/tasks', label: 'My Tasks' },
+          { href: '/conversation', label: 'Chat' },
+        ]
+      : [];
 
-        {user.role === 'employee' && (
-          <>
-            <Link href="/employee-dashboard/tasks" className="text-gray-700 hover:text-blue-600">
-              My Tasks
+  return (
+    <div className="flex">
+      {/* Sidebar */}
+      <aside
+        className={`h-screen bg-gray-100 border-r border-gray-800 p-4 transition-all duration-300 ${
+          collapsed ? 'w-16' : 'w-64'
+        } flex flex-col`}
+      >
+        {/* Logo */}
+        <div
+          className={`mb-6 flex items-center justify-center transition-opacity duration-300 ${
+            collapsed ? 'opacity-0' : 'opacity-100'
+          }`}
+       
+        >
+          {/* Nếu có SVG inline thì thay thế phần img bên dưới */}
+          <img
+            src="/skipli-logo.png"
+            alt="Skipli Logo"
+            className="max-h-16 object-contain"
+            draggable={false}
+          />
+        </div>
+
+        {/* Placeholder gray block cũ, có thể giữ hoặc xóa */}
+      
+
+        <nav className="flex flex-col space-y-4 flex-1 overflow-auto">
+          {navItems.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              className={`font-medium whitespace-nowrap transition-opacity duration-300 ${
+                collapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'
+              }`}
+            >
+              {label}
             </Link>
-            <Link href="/employee-dashboard/chat" className="text-gray-700 hover:text-blue-600">
-              Chat
-            </Link>
-          </>
-        )}
-      </nav>
+          ))}
+        </nav>
+
+        {/* Toggle Button */}
+        <button
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="self-end p-2 rounded hover:bg-gray-200 transition"
+          onClick={() => setCollapsed(!collapsed)}
+        >
+          {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+        </button>
+      </aside>
     </div>
   );
 }

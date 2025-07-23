@@ -1,3 +1,11 @@
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import type { Task } from '@/types/task';
 import type { Employee } from '@/types/employee';
@@ -16,13 +24,14 @@ export default function TaskTable({ tasks, employees, loading, onEdit, onDelete 
   }
 
   if (tasks.length === 0) {
-    return <div className="text-center py-4 text-gray-500">No tasks found.</div>;
+    return <div className="text-center py-4 text-muted-foreground">No tasks found.</div>;
   }
 
-  const getEmployeeName = (employeeId: string) => {
-    const employee = employees.find((emp) => emp.id === employeeId);
-    return employee ? employee.name : 'Unknown';
-  };
+const getEmployeeName = (employeeId: string) => {
+  const employee = employees.find((emp) => emp.employeeId === employeeId);
+  return employee ? employee.name : 'Unknown';
+};
+
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return 'None';
@@ -45,53 +54,53 @@ export default function TaskTable({ tasks, employees, loading, onEdit, onDelete 
   const statusClass = (status: Task['status']) => {
     switch (status) {
       case 'pending':
-        return 'bg-yellow-100 text-yellow-700';
+        return 'bg-yellow-100 text-yellow-800';
       case 'in_progress':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-blue-100 text-blue-800';
       case 'completed':
-        return 'bg-green-100 text-green-700';
+        return 'bg-green-100 text-green-800';
       default:
         return 'bg-gray-100 text-gray-500';
     }
   };
 
   return (
-    <table className="w-full text-left border border-gray-200">
-      <thead className="bg-gray-100">
-        <tr>
-          {/* <th className="p-3">Task ID</th> */}
-          <th className="p-3">Title</th>
-          <th className="p-3">Description</th>
-          <th className="p-3">Due Date</th>
-          <th className="p-3">Employee</th>
-          <th className="p-3">Status</th>
-          <th className="p-3">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Title</TableHead>
+          <TableHead>Description</TableHead>
+          <TableHead>Due Date</TableHead>
+          <TableHead>Employee</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead className="text-right">Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {tasks.map((task) => (
-          <tr key={task.id} className="border-t border-gray-200">
-            {/* <td className="p-3">{task.id}</td> */}
-            <td className="p-3">{task.title}</td>
-            <td className="p-3">{task.description || 'None'}</td>
-            <td className="p-3">{formatDate(task.dueDate)}</td>
-            <td className="p-3">{getEmployeeName(task.employeeId)}</td>
-            <td className="p-3">
-              <span className={`px-2 py-1 rounded ${statusClass(task.status)}`}>
+          <TableRow key={task.id}>
+            <TableCell>{task.title}</TableCell>
+            <TableCell>{task.description || 'None'}</TableCell>
+            <TableCell>{formatDate(task.dueDate)}</TableCell>
+            <TableCell>{getEmployeeName(task.employeeId)}</TableCell>
+            <TableCell>
+              <span
+                className={`px-2 py-1 rounded text-sm font-medium ${statusClass(task.status)}`}
+              >
                 {formatStatus(task.status)}
               </span>
-            </td>
-            <td className="p-3 space-x-2">
-              <Button className="bg-blue-500 text-white" onClick={() => onEdit(task)}>
+            </TableCell>
+            <TableCell className="text-right space-x-2">
+              <Button variant="outline" onClick={() => onEdit(task)}>
                 Edit
               </Button>
-              <Button className="bg-red-500 text-white" onClick={() => onDelete(task.id)}>
+              <Button variant="destructive" onClick={() => onDelete(task.id)}>
                 Delete
               </Button>
-            </td>
-          </tr>
+            </TableCell>
+          </TableRow>
         ))}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   );
 }

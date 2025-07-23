@@ -34,26 +34,41 @@ export default function ModalTaskForm({
     employeeId: '',
   });
 
-  useEffect(() => {
-    if (open) {
-      if (initialData) {
-        const { title, description, dueDate, status, employeeId } = initialData;
-        setForm({ title, description, dueDate, status, employeeId });
-      } else {
-        setForm({
-          title: '',
-          description: '',
-          dueDate: undefined,
-          status: 'pending',
-          employeeId: '',
-        });
-      }
+ useEffect(() => {
+  if (open) {
+    if (defaultValues) {
+      const { title, description, dueDate, status, employeeId } = defaultValues;
+
+      const validEmployeeId = employees.find(emp => emp.employeeId === employeeId)?.employeeId || '';
+      setForm({
+        title,
+        description,
+        dueDate,
+        status,
+        employeeId: validEmployeeId,
+      });
+    } else {
+      setForm({
+        title: '',
+        description: '',
+        dueDate: undefined,
+        status: 'pending',
+        employeeId: '',
+      });
     }
-  }, [open, initialData]);
+  }
+}, [open, defaultValues, employees]);
 
   const handleSubmit = () => {
-    if (!form.employeeId || !form.title.trim()) {
-      alert('Please enter a title and select an employee.');
+    console.log('Dữ liệu form:', form);
+    console.log('Gửi employeeId:', form.employeeId);
+   
+    if (!form.title.trim()) {
+      alert('Title');
+      return;
+    }
+    if (!form.employeeId || !employees.find((emp) => emp.employeeId === form.employeeId)) {
+      alert('Employee!.');
       return;
     }
 
@@ -61,21 +76,23 @@ export default function ModalTaskForm({
     onClose();
   };
 
+
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{defaultValues?.id ? 'Edit Task' : 'Create Task'}</DialogTitle>
+          <DialogTitle>{defaultValues?.id ? 'Update task' : 'create task'}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 mt-4">
           <Input
-            placeholder="Task title"
+            placeholder="Title task"
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
           />
           <textarea
-            placeholder="Detailed description"
+            placeholder="des"
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md"
@@ -89,37 +106,35 @@ export default function ModalTaskForm({
             }
             className="w-full px-3 py-2 border border-gray-300 rounded-md"
           />
-
           <select
             value={form.employeeId}
             onChange={(e) => setForm({ ...form, employeeId: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md"
           >
-            <option value="">Select employee</option>
+            <option value="">Select Employee</option>
             {employees.map((emp) => (
-              <option key={emp.id} value={emp.id}>
+              <option key={emp.employeeId} value={emp.employeeId}>
                 {emp.name} ({emp.email})
               </option>
             ))}
           </select>
-
           <select
             value={form.status}
             onChange={(e) => setForm({ ...form, status: e.target.value as Task['status'] })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md"
           >
-            <option value="pending">Pending</option>
+            <option value="pending">pending</option>
             <option value="in_progress">In Progress</option>
-            <option value="completed">Completed</option>
+            <option value="completed">complete</option>
           </select>
         </div>
 
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            cancel
           </Button>
           <Button className="bg-blue-500 text-white" onClick={handleSubmit}>
-            {defaultValues?.id ? 'Update' : 'Create'}
+            {defaultValues?.id ? 'Update' : 'create'}
           </Button>
         </div>
       </DialogContent>

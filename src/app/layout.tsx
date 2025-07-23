@@ -5,6 +5,7 @@ import Header from "@/components/layout/Header";
 import Nav from "@/components/layout/Nav";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
+import { Providers } from "@/providers";
 
 export const metadata: Metadata = {
   title: "Skipli",
@@ -42,14 +43,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
 
   return (
+    
     <html lang="vi">
+      
     <body className={`${geistSans.variable} ${geistMono.variable} antialiased flex min-h-screen`}>
-
-      {user && <Nav user={user} />}
+<Providers>  {user && <Nav user={user} />}
         <div className="flex-1 flex flex-col">
           {user && <Header user={user} />}
           <main className="container mx-auto p-4">{children}</main>
-        </div>
+        </div></Providers>
+    
       </body>
     </html>
   );

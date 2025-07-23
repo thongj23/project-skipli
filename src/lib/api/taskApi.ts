@@ -3,28 +3,34 @@ import { Task } from '@/types/task';
 import { Socket } from 'socket.io-client';
 
 export const taskService = (socket: Socket | null) => ({
-  async getAll(): Promise<Task[]> {
-    try {
-      const res = await axiosInstance.get('/owner/tasks');
-      return res.data.map((task: any) => ({
-        id: task.id,
-        title: task.title,
-        description: task.description,
-        dueDate: task.dueDate,
-        status: task.status,
-        employeeId: task.employeeId,
-        createdBy: task.createdBy,
-        createdAt: task.createdAt,
-        updatedAt: task.updatedAt,
-      }));
-    } catch (error: any) {
-      console.error('Failed to fetch task list:', error.message);
-      if (error.message.includes('Authentication token not found')) {
-        throw new Error('Session has expired. Please log in again.');
-      }
-      throw new Error('Unable to load tasks: ' + error.message);
+async getAll(page = 1, limit = 10): Promise<Task[]> {
+  try {
+    const res = await axiosInstance.get('/owner/tasks', {
+      params: { page, limit },
+    });
+
+    return res.data.map((task: any) => ({
+      id: task.id,
+      title: task.title,
+      description: task.description,
+      dueDate: task.dueDate,
+      status: task.status,
+      employeeId: task.employeeId,
+      createdBy: task.createdBy,
+      createdAt: task.createdAt,
+      updatedAt: task.updatedAt,
+    }));
+  } catch (error: any) {
+    console.error('Failed to fetch task list:', error.message);
+
+    if (error.message.includes('Authentication token not found')) {
+      throw new Error('Session has expired. Please log in again.');
     }
-  },
+
+    throw new Error('Unable to load tasks: ' + error.message);
+  }
+},
+
 
   async create(data: Omit<Task, 'id'>): Promise<Task> {
     try {
@@ -47,7 +53,7 @@ export const taskService = (socket: Socket | null) => ({
 
   async update(id: string, updates: Partial<Task>): Promise<Task> {
     try {
-      const res = await axiosInstance.patch('/owner/tasks', { id, ...updates });
+      const res = await axiosInstance.patch('/owner/task', { id, ...updates });
       const task: Task = res.data;
 
       if (socket?.connected) {
@@ -66,7 +72,7 @@ export const taskService = (socket: Socket | null) => ({
 
   async remove(id: string): Promise<{ message: string }> {
     try {
-      const res = await axiosInstance.delete(`/owner/tasks/${id}`);
+      const res = await axiosInstance.delete(`/owner/task/${id}`);
       if (socket?.connected) {
         socket.emit('taskDeleted', id);
       }
@@ -80,28 +86,35 @@ export const taskService = (socket: Socket | null) => ({
     }
   },
 
-  async getByUserId(userId: string): Promise<Task[]> {
-    try {
-      const res = await axiosInstance.get(`/task/user/${userId}`);
-      return res.data.map((task: any) => ({
-        id: task.id,
-        title: task.title,
-        description: task.description,
-        dueDate: task.dueDate,
-        status: task.status,
-        employeeId: task.employeeId,
-        createdBy: task.createdBy,
-        createdAt: task.createdAt,
-        updatedAt: task.updatedAt,
-      }));
-    } catch (error: any) {
-      console.error('Failed to fetch user tasks:', error.message);
-      if (error.message.includes('Authentication token not found')) {
-        throw new Error('Session has expired. Please log in again.');
-      }
-      throw new Error('Unable to load tasks: ' + error.message);
+async getByUserId(userId: string, page: number, limit: number): Promise<{ tasks: Task[]; total: number }> {
+  try {
+    const res = await axiosInstance.get(`/task/user/${userId}`, {
+      params: { page, limit }
+    });
+    const tasks = res.data.tasks.map((task: any) => ({
+      id: task.id,
+      title: task.title,
+      description: task.description,
+      dueDate: task.dueDate,
+      status: task.status,
+      employeeId: task.employeeId,
+      createdBy: task.createdBy,
+      createdAt: task.createdAt,
+      updatedAt: task.updatedAt,
+    }));
+
+    const total = res.data.total;
+
+    return { tasks, total };
+  } catch (error: any) {
+    console.error('Failed to fetch user tasks:', error.message);
+    if (error.message.includes('Authentication token not found')) {
+      throw new Error('Session has expired. Please log in again.');
     }
-  },
+    throw new Error('Unable to load tasks: ' + error.message);
+  }
+},
+
 
   async updateStatus(taskId: string, status: Task['status']): Promise<Task> {
     try {

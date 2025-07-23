@@ -5,9 +5,11 @@ import { employeeService } from "@/lib/api/employeeApi";
 import EmployeeTable from "./EmployeeTable";
 import type { Employee } from "@/types/employee";
 import ModalEmployeeForm from "./ModalEmployeeForm";
-
+import Pagination from "../ui/Pagination";
 export default function EmployeeManagement() {
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
     null
@@ -26,9 +28,20 @@ export default function EmployeeManagement() {
     }
   };
 
-  useEffect(() => {
-    fetchEmployees();
-  }, []);
+useEffect(() => {
+  const fetchEmployees = async () => {
+    setLoading(true);
+    try {
+      const res = await employeeService.getAll(page, 10);
+      setEmployees(res.data);
+      setTotalPages(res.totalPages);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchEmployees();
+}, [page]);
 
   const handleSave = async (
     data: Omit<Employee, "id" | "schedule" | "tasks">,
@@ -113,13 +126,15 @@ export default function EmployeeManagement() {
           Add Employee
         </button>
       </div>
-
-      <EmployeeTable
+<>  <EmployeeTable
         employees={employees}
         loading={loading}
         onEdit={handleEdit}
         onDelete={handleDelete}
       />
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        </>
+     
 
       <ModalEmployeeForm
         open={openForm}

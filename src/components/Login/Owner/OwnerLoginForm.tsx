@@ -39,9 +39,9 @@ useEffect(() => {
   return (
     <div className="flex items-center justify-center min-h-screen px-4">
       <div className="w-full max-w-sm space-y-6">
-        <Button variant="outline" size="sm" onClick={onBack}>
+        {/* <Button variant="outline" size="sm" onClick={onBack}>
           ← Back
-        </Button>
+        </Button> */}
 
         <div className="text-center">
           <h2 className="text-xl font-semibold">Owner Login</h2>

@@ -27,11 +27,9 @@ export default function SetupPasswordPage() {
 
     setLoading(true);
     try {
-      await authService.setupPassword(employeeId, password); 
-
+      await authService.setupPassword(employeeId, password);
       toast.success('Password set successfully!');
       router.push('/login');
-      
     } catch (error: any) {
       toast.error(error.message || 'Something went wrong');
     } finally {
@@ -40,29 +38,37 @@ export default function SetupPasswordPage() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white shadow rounded">
-      <h2 className="text-xl font-semibold mb-4">Set Your Password</h2>
-      <input
-        type="password"
-        placeholder="Enter password"
-        className="w-full mb-3 p-2 border rounded"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
-      <input
-        type="password"
-        placeholder="Confirm password"
-        className="w-full mb-4 p-2 border rounded"
-        value={confirmPassword}
-        onChange={(e) => setConfirmPassword(e.target.value)}
-      />
-      <button
-        onClick={handleSubmit}
-        disabled={loading}
-        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full"
-      >
-        {loading ? 'Setting Password...' : 'Set Password'}
-      </button>
+    <div className="max-w-md mx-auto mt-16 px-6 py-8 bg-white shadow-lg rounded-lg">
+      <h1 className="text-2xl font-bold text-center mb-6">Set Your Password</h1>
+
+      <div className="space-y-4">
+        <input
+          type="password"
+          placeholder="Enter password"
+          className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          disabled={loading}
+        />
+        <input
+          type="password"
+          placeholder="Confirm password"
+          className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          disabled={loading}
+        />
+
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          className={`w-full py-2 text-white rounded ${
+            loading ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'
+          }`}
+        >
+          {loading ? 'Setting Password...' : 'Set Password'}
+        </button>
+      </div>
     </div>
   );
 }

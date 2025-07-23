@@ -1,5 +1,15 @@
-import { Button } from '@/components/ui/button';
-import type { Employee } from '@/types/employee';
+"use client";
+
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import type { Employee } from "@/types/employee";
 
 type Props = {
   employees: Employee[];
@@ -14,51 +24,50 @@ export default function EmployeeTable({ employees, loading, onEdit, onDelete }: 
   }
 
   if (employees.length === 0) {
-    return <div className="text-center py-4 text-gray-500">No employees found.</div>;
+    return <div className="text-center py-4 text-muted-foreground">No employees found.</div>;
   }
 
-  const getStatus = (emp: Employee): 'Active' | 'Inactive' => {
-    return emp.schedule ? 'Active' : 'Inactive';
-  };
-
   return (
-    <table className="w-full text-left border border-gray-200">
-      <thead className="bg-gray-100">
-        <tr>
-          <th className="p-3">Employee Name</th>
-          <th className="p-3">Email</th>
-          <th className="p-3">Status</th>
-          <th className="p-3">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Employee Name</TableHead>
+          <TableHead>Email</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {employees.map((emp) => {
-          const status = getStatus(emp);
+          const isActive = !!emp.schedule;
+          const statusText = isActive ? "Active" : "Inactive";
+          const statusClass = isActive
+            ? "bg-green-100 text-green-700"
+            : "bg-gray-200 text-gray-600";
+
           return (
-            <tr key={emp.id} className="border-t border-gray-200">
-              <td className="p-3">{emp.name}</td>
-              <td className="p-3">{emp.email}</td>
-              <td className="p-3">
+            <TableRow key={emp.id}>
+              <TableCell>{emp.name}</TableCell>
+              <TableCell>{emp.email}</TableCell>
+              <TableCell>
                 <span
-                  className={`px-2 py-1 rounded ${
-                    status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
-                  }`}
+                  className={`inline-block px-2 py-1 rounded-md text-sm font-medium ${statusClass}`}
                 >
-                  {status}
+                  {statusText}
                 </span>
-              </td>
-              <td className="p-3 space-x-2">
-                <Button className="bg-blue-500 text-white" onClick={() => onEdit(emp)}>
+              </TableCell>
+              <TableCell className="space-x-2">
+                <Button variant="default" size="sm" onClick={() => onEdit(emp)}>
                   Edit
                 </Button>
-                <Button className="bg-red-500 text-white" onClick={() => onDelete(emp.id)}>
+                <Button variant="destructive" size="sm" onClick={() => onDelete(emp.id)}>
                   Delete
                 </Button>
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           );
         })}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   );
 }
